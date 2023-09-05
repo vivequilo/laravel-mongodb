@@ -1,5 +1,5 @@
 {
-    "name": "jenssegers/mongodb",
+    "name": "quilo/mongodb",
     "description": "A MongoDB based Eloquent model and Query builder for Laravel (Moloquent)",
     "keywords": [
         "laravel",
@@ -10,7 +10,7 @@
         "model",
         "moloquent"
     ],
-    "homepage": "https://github.com/jenssegers/laravel-mongodb",
+    "homepage": "https://github.com/vivequilo/laravel-mongodb",
     "authors": [
         {
             "name": "Jens Segers",
