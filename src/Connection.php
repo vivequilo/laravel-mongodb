@@ -1,14 +1,14 @@
 <?php
 
-namespace Jenssegers\Mongodb;
+namespace MongoDB\Laravel;
 
 use function class_exists;
 use Composer\InstalledVersions;
 use Illuminate\Database\Connection as BaseConnection;
 use InvalidArgumentException;
-use Jenssegers\Mongodb\Concerns\ManagesTransactions;
 use MongoDB\Client;
 use MongoDB\Database;
+use MongoDB\Laravel\Concerns\ManagesTransactions;
 use Throwable;
 
 /**
@@ -234,9 +234,17 @@ class Connection extends BaseConnection
         $hosts = is_array($config['host']) ? $config['host'] : [$config['host']];
 
         foreach ($hosts as &$host) {
-            // Check if we need to add a port to the host
-            if (strpos($host, ':') === false && ! empty($config['port'])) {
-                $host = $host.':'.$config['port'];
+            // ipv6
+            if (filter_var($host, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV6)) {
+                $host = '['.$host.']';
+                if (! empty($config['port'])) {
+                    $host = $host.':'.$config['port'];
+                }
+            } else {
+                // Check if we need to add a port to the host
+                if (! str_contains($host, ':') && ! empty($config['port'])) {
+                    $host = $host.':'.$config['port'];
+                }
             }
         }
 
@@ -330,7 +338,7 @@ class Connection extends BaseConnection
     {
         if (class_exists(InstalledVersions::class)) {
             try {
-                return self::$version = InstalledVersions::getPrettyVersion('jenssegers/laravel-mongodb');
+                return self::$version = InstalledVersions::getPrettyVersion('mongodb/laravel-mongodb');
             } catch (Throwable $t) {
                 // Ignore exceptions and return unknown version
             }

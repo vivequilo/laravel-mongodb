@@ -1,6 +1,6 @@
 <?php
 
-namespace Jenssegers\Mongodb\Query;
+namespace MongoDB\Laravel\Query;
 
 use Carbon\CarbonPeriod;
 use Closure;
@@ -11,12 +11,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
-use Jenssegers\Mongodb\Connection;
 use MongoDB\BSON\Binary;
 use MongoDB\BSON\ObjectID;
 use MongoDB\BSON\Regex;
 use MongoDB\BSON\UTCDateTime;
 use MongoDB\Driver\Cursor;
+use MongoDB\Laravel\Connection;
 use RuntimeException;
 
 /**
@@ -625,7 +625,7 @@ class Builder extends BaseBuilder
      */
     public function increment($column, $amount = 1, array $extra = [], array $options = [])
     {
-        $query = ['$inc' => [$column => $amount]];
+        $query = ['$inc' => [(string) $column => $amount]];
 
         if (! empty($extra)) {
             $query['$set'] = $extra;
@@ -703,7 +703,14 @@ class Builder extends BaseBuilder
         $wheres = $this->compileWheres();
         $options = $this->inheritConnectionOptions();
 
-        $result = $this->collection->deleteMany($wheres, $options);
+        if (is_int($this->limit)) {
+            if ($this->limit !== 1) {
+                throw new \LogicException(sprintf('Delete limit can be 1 or null (unlimited). Got %d', $this->limit));
+            }
+            $result = $this->collection->deleteOne($wheres, $options);
+        } else {
+            $result = $this->collection->deleteMany($wheres, $options);
+        }
 
         if (1 == (int) $result->isAcknowledged()) {
             return $result->getDeletedCount();
@@ -790,9 +797,9 @@ class Builder extends BaseBuilder
             }
             $query = [$operator => $column];
         } elseif ($batch) {
-            $query = [$operator => [$column => ['$each' => $value]]];
+            $query = [$operator => [(string) $column => ['$each' => $value]]];
         } else {
-            $query = [$operator => [$column => $value]];
+            $query = [$operator => [(string) $column => $value]];
         }
 
         return $this->performUpdate($query);
@@ -997,8 +1004,14 @@ class Builder extends BaseBuilder
                 $where['boolean'] = 'or'.(str_ends_with($where['boolean'], 'not') ? ' not' : '');
             }
 
+            // Column name can be a Stringable object.
+            if (isset($where['column']) && $where['column'] instanceof \Stringable) {
+                $where['column'] = (string) $where['column'];
+            }
+
             // We use different methods to compile different wheres.
             $method = "compileWhere{$where['type']}";
+
             $result = $this->{$method}($where);
 
             if (str_ends_with($where['boolean'], 'not')) {

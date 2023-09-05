@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Jenssegers\Mongodb\Tests;
+namespace MongoDB\Laravel\Tests;
 
 use DateTime;
 use DateTimeImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
+use Illuminate\Support\Str;
 use Illuminate\Testing\Assert;
-use Jenssegers\Mongodb\Collection;
-use Jenssegers\Mongodb\Query\Builder;
-use Jenssegers\Mongodb\Tests\Models\Item;
-use Jenssegers\Mongodb\Tests\Models\User;
 use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\Regex;
 use MongoDB\BSON\UTCDateTime;
@@ -22,6 +19,10 @@ use MongoDB\Driver\Monitoring\CommandFailedEvent;
 use MongoDB\Driver\Monitoring\CommandStartedEvent;
 use MongoDB\Driver\Monitoring\CommandSubscriber;
 use MongoDB\Driver\Monitoring\CommandSucceededEvent;
+use MongoDB\Laravel\Collection;
+use MongoDB\Laravel\Query\Builder;
+use MongoDB\Laravel\Tests\Models\Item;
+use MongoDB\Laravel\Tests\Models\User;
 
 class QueryBuilderTest extends TestCase
 {
@@ -379,7 +380,7 @@ class QueryBuilderTest extends TestCase
     public function testPushRefuses2ndArgumentWhen1stIsAnArray()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('2nd argument of Jenssegers\Mongodb\Query\Builder::push() must be "null" when 1st argument is an array. Got "string" instead.');
+        $this->expectExceptionMessage('2nd argument of MongoDB\Laravel\Query\Builder::push() must be "null" when 1st argument is an array. Got "string" instead.');
 
         DB::collection('users')->push(['tags' => 'tag1'], 'tag2');
     }
@@ -894,5 +895,65 @@ class QueryBuilderTest extends TestCase
         foreach ($results as $i => $result) {
             $this->assertEquals($data[$i]['name'], $result['name']);
         }
+    }
+
+    public function testStringableColumn()
+    {
+        DB::collection('users')->insert([
+            ['name' => 'Jane Doe', 'age' => 36, 'birthday' => new UTCDateTime(new \DateTime('1987-01-01 00:00:00'))],
+            ['name' => 'John Doe', 'age' => 28, 'birthday' => new UTCDateTime(new \DateTime('1995-01-01 00:00:00'))],
+        ]);
+
+        $nameColumn = Str::of('name');
+        $this->assertInstanceOf(\Stringable::class, $nameColumn, 'Ensure we are testing the feature with a Stringable instance');
+
+        $user = DB::collection('users')->where($nameColumn, 'John Doe')->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        // Test this other document to be sure this is not a random success to data order
+        $user = DB::collection('users')->where($nameColumn, 'Jane Doe')->orderBy('natural')->first();
+        $this->assertEquals('Jane Doe', $user['name']);
+
+        // With an operator
+        $user = DB::collection('users')->where($nameColumn, '!=', 'Jane Doe')->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        // whereIn and whereNotIn
+        $user = DB::collection('users')->whereIn($nameColumn, ['John Doe'])->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        $user = DB::collection('users')->whereNotIn($nameColumn, ['John Doe'])->first();
+        $this->assertEquals('Jane Doe', $user['name']);
+
+        // whereBetween and whereNotBetween
+        $ageColumn = Str::of('age');
+        $user = DB::collection('users')->whereBetween($ageColumn, [30, 40])->first();
+        $this->assertEquals('Jane Doe', $user['name']);
+
+        // whereBetween and whereNotBetween
+        $ageColumn = Str::of('age');
+        $user = DB::collection('users')->whereNotBetween($ageColumn, [30, 40])->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        // whereDate
+        $birthdayColumn = Str::of('birthday');
+        $user = DB::collection('users')->whereDate($birthdayColumn, '1995-01-01')->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        $user = DB::collection('users')->whereDate($birthdayColumn, '<', '1990-01-01')
+            ->orderBy($birthdayColumn, 'desc')->first();
+        $this->assertEquals('Jane Doe', $user['name']);
+
+        $user = DB::collection('users')->whereDate($birthdayColumn, '>', '1990-01-01')
+            ->orderBy($birthdayColumn, 'asc')->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        $user = DB::collection('users')->whereDate($birthdayColumn, '!=', '1987-01-01')->first();
+        $this->assertEquals('John Doe', $user['name']);
+
+        // increment
+        DB::collection('users')->where($ageColumn, 28)->increment($ageColumn, 1);
+        $user = DB::collection('users')->where($ageColumn, 29)->first();
+        $this->assertEquals('John Doe', $user['name']);
     }
 }

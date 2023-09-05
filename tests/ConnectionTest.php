@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Jenssegers\Mongodb\Tests;
+namespace MongoDB\Laravel\Tests;
 
 use Generator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Jenssegers\Mongodb\Collection;
-use Jenssegers\Mongodb\Connection;
-use Jenssegers\Mongodb\Query\Builder;
-use Jenssegers\Mongodb\Schema\Builder as SchemaBuilder;
 use MongoDB\Client;
 use MongoDB\Database;
+use MongoDB\Laravel\Collection;
+use MongoDB\Laravel\Connection;
+use MongoDB\Laravel\Query\Builder;
+use MongoDB\Laravel\Schema\Builder as SchemaBuilder;
 
 class ConnectionTest extends TestCase
 {
@@ -58,6 +58,54 @@ class ConnectionTest extends TestCase
             'config' => [
                 'host' => 'some-host',
                 'port' => 12345,
+                'database' => 'tests',
+            ],
+        ];
+
+        yield 'IPv4' => [
+            'expectedUri' => 'mongodb://1.2.3.4',
+            'expectedDatabaseName' => 'tests',
+            'config' => [
+                'host' => '1.2.3.4',
+                'database' => 'tests',
+            ],
+        ];
+
+        yield 'IPv4 and port' => [
+            'expectedUri' => 'mongodb://1.2.3.4:1234',
+            'expectedDatabaseName' => 'tests',
+            'config' => [
+                'host' => '1.2.3.4',
+                'port' => 1234,
+                'database' => 'tests',
+            ],
+        ];
+
+        yield 'IPv6' => [
+            'expectedUri' => 'mongodb://[2001:db8:3333:4444:5555:6666:7777:8888]',
+            'expectedDatabaseName' => 'tests',
+            'config' => [
+                'host' => '2001:db8:3333:4444:5555:6666:7777:8888',
+                'database' => 'tests',
+            ],
+        ];
+
+        yield 'IPv6 and port' => [
+            'expectedUri' => 'mongodb://[2001:db8:3333:4444:5555:6666:7777:8888]:1234',
+            'expectedDatabaseName' => 'tests',
+            'config' => [
+                'host' => '2001:db8:3333:4444:5555:6666:7777:8888',
+                'port' => 1234,
+                'database' => 'tests',
+            ],
+        ];
+
+        yield 'multiple IPv6' => [
+            'expectedUri' => 'mongodb://[::1],[2001:db8::1:0:0:1]',
+            'expectedDatabaseName' => 'tests',
+            'config' => [
+                'host' => ['::1', '2001:db8::1:0:0:1'],
+                'port' => null,
                 'database' => 'tests',
             ],
         ];

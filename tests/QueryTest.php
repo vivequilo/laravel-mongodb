@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Jenssegers\Mongodb\Tests;
+namespace MongoDB\Laravel\Tests;
 
 use DateTimeImmutable;
-use Jenssegers\Mongodb\Tests\Models\Birthday;
-use Jenssegers\Mongodb\Tests\Models\Scoped;
-use Jenssegers\Mongodb\Tests\Models\User;
+use MongoDB\Laravel\Tests\Models\Birthday;
+use MongoDB\Laravel\Tests\Models\Scoped;
+use MongoDB\Laravel\Tests\Models\User;
 
 class QueryTest extends TestCase
 {
@@ -547,5 +547,41 @@ class QueryTest extends TestCase
         $this->assertEquals('Yvonne Yoe', $subset[0]->name);
         $this->assertEquals('John Doe', $subset[1]->name);
         $this->assertEquals('Brett Boe', $subset[2]->name);
+    }
+
+    public function testDelete(): void
+    {
+        // Check fixtures
+        $this->assertEquals(3, User::where('title', 'admin')->count());
+
+        // Delete a single document with filter
+        User::where('title', 'admin')->limit(1)->delete();
+        $this->assertEquals(2, User::where('title', 'admin')->count());
+
+        // Delete all with filter
+        User::where('title', 'admin')->delete();
+        $this->assertEquals(0, User::where('title', 'admin')->count());
+
+        // Check remaining fixtures
+        $this->assertEquals(6, User::count());
+
+        // Delete a single document
+        User::limit(1)->delete();
+        $this->assertEquals(5, User::count());
+
+        // Delete all
+        User::limit(null)->delete();
+        $this->assertEquals(0, User::count());
+    }
+
+    /**
+     * @testWith [0]
+     *           [2]
+     */
+    public function testDeleteException(int $limit): void
+    {
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('Delete limit can be 1 or null (unlimited).');
+        User::limit($limit)->delete();
     }
 }
