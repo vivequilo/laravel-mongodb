@@ -1,5 +1,5 @@
 {
-    "name": "mongodb/laravel-mongodb",
+    "name": "jenssegers/mongodb",
     "description": "A MongoDB based Eloquent model and Query builder for Laravel",
     "keywords": [
         "laravel",
@@ -15,10 +15,26 @@
         "security": "https://www.mongodb.com/security"
     },
     "authors": [
-        { "name": "Andreas Braun", "email": "andreas.braun@mongodb.com", "role": "Leader" },
-        { "name": "Jérôme Tamarelle", "email": "jerome.tamarelle@mongodb.com", "role": "Maintainer" },
-        { "name": "Jeremy Mikola", "email": "jmikola@gmail.com", "role": "Maintainer" },
-        { "name": "Jens Segers", "homepage": "https://jenssegers.com", "role": "Creator" }
+        {
+            "name": "Andreas Braun",
+            "email": "andreas.braun@mongodb.com",
+            "role": "Leader"
+        },
+        {
+            "name": "Jérôme Tamarelle",
+            "email": "jerome.tamarelle@mongodb.com",
+            "role": "Maintainer"
+        },
+        {
+            "name": "Jeremy Mikola",
+            "email": "jmikola@gmail.com",
+            "role": "Maintainer"
+        },
+        {
+            "name": "Jens Segers",
+            "homepage": "https://jenssegers.com",
+            "role": "Creator"
+        }
     ],
     "license": "MIT",
     "require": {
